@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cotizaciones de Acciones</title>
+    <title>Cotizaciones de Acciones Tech</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -72,7 +72,7 @@
 </head>
 <body class="bg-gray-100">
     <div class="container">
-        <h1 class="text-4xl font-bold text-gray-900 mb-6">Cotizaciones de Acciones Seleccionadas</h1>
+        <h1 class="text-4xl font-bold text-gray-900 mb-6">Cotizaciones de Acciones Tech</h1>
         <p class="text-lg text-gray-700 mb-8">Datos proporcionados por Alpha Vantage (con 15-20 min. de retraso).</p>
 
         <div class="quote-grid">
@@ -81,22 +81,25 @@
                 <p class="loading">Cargando datos...</p>
             </div>
 
-            <div id="nvda-quote" class="quote-card">
-                <h3>NVIDIA (NVDA)</h3>
-                <p class="loading">Cargando datos...</p>
-            </div>
-
             <div id="googl-quote" class="quote-card">
                 <h3>Alphabet (GOOGL)</h3>
                 <p class="loading">Cargando datos...</p>
             </div>
             
+            <div id="goog-quote" class="quote-card">
+                <h3>Google (GOOG)</h3>
+                <p class="loading">Cargando datos...</p>
+            </div>
+
             <div id="aapl-quote" class="quote-card">
                 <h3>Apple (AAPL)</h3>
                 <p class="loading">Cargando datos...</p>
             </div>
 
-
+            <div id="ionq-quote" class="quote-card">
+                <h3>IONQ (IONQ)</h3>
+                <p class="loading">Cargando datos...</p>
+            </div>
         </div>
     </div>
 
@@ -110,21 +113,22 @@
         // ******************************************************
 
         const symbols = [
-            // Acciones de EE. UU. (normalmente listadas en NASDAQ o NYSE)
             { id: 'msft-quote', symbol: 'MSFT', name: 'Microsoft' },
-            { id: 'nvda-quote', symbol: 'NVDA', name: 'NVIDIA' },
-            { id: 'googl-quote', symbol: 'GOOGL', name: 'Alphabet (Clase A)' }, // Acciones Clase A de Alphabet
-            { id: 'aapl-quote', symbol: 'AAPL', name: 'Apple)' },    // 
-
-            // Acciones españolas (sufijo .MC para Madrid Exchange)
-            { id: 'bkt-quote', symbol: 'BKT.MC', name: 'Bankinter' },
-            { id: 'tef-quote', symbol: 'TEF.MC', name: 'Telefónica' },
-            { id: 'idr-quote', symbol: 'IDR.MC', name: 'Indra' }
+            { id: 'googl-quote', symbol: 'GOOGL', name: 'Alphabet (Clase A)' },
+            { id: 'goog-quote', symbol: 'GOOG', name: 'Google (Clase C)' },
+            { id: 'aapl-quote', symbol: 'AAPL', name: 'Apple' },
+            { id: 'ionq-quote', symbol: 'IONQ', name: 'IONQ' }
         ];
 
         async function fetchStockQuote(targetId, stockSymbol, stockName) {
             const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${API_KEY}`;
             const targetElement = document.getElementById(targetId);
+
+            // Verifica si el elemento HTML existe antes de intentar modificarlo
+            if (!targetElement) {
+                console.error(`Error: Elemento HTML con ID '${targetId}' no encontrado. No se puede mostrar la cotización para ${stockName}.`);
+                return; // Sale de la función si el elemento no se encuentra
+            }
 
             try {
                 const response = await fetch(url);
