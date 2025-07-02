@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Índices de Mercados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 1000px; /* Ancho mayor para los widgets */
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .widget-section {
+            display: flex;
+            flex-wrap: wrap; /* Permite que los widgets se ajusten en filas */
+            justify-content: center; /* Centra los widgets */
+            gap: 20px; /* Espacio entre widgets */
+            margin-top: 30px;
+        }
+        .widget-wrapper {
+            flex: 1 1 calc(50% - 20px); /* Dos columnas, restando el gap */
+            min-width: 300px; /* Ancho mínimo para evitar que se hagan demasiado pequeños */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden; /* Asegura que el iframe no se salga */
+        }
+        @media (max-width: 768px) {
+            .widget-wrapper {
+                flex: 1 1 100%; /* Una columna en pantallas pequeñas */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container">
+        <h1 class="text-4xl font-bold text-gray-900 mb-6">Principales Índices Bursátiles</h1>
+        <p class="text-lg text-gray-700 mb-8">Datos proporcionados por TradingView.</p>
+
+        <div class="widget-section">
+            <div class="tradingview-widget-container widget-wrapper">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+                {
+                  "symbol": "INDEX:SPX",
+                  "width": "100%",
+                  "is,"height": 250,
+                  "locale": "es",
+                  "dateRange": "12M",
+                  "colorTheme": "light",
+                  "fontColor": "#292929",
+                  "border": true,
+                  "borderColor": "#e0e0e0",
+                  "gridLineColor": "#e0e0e0",
+                  "chartType": "area",
+                  "font": "Inter",
+                  "underLineColor": "rgba(33, 150, 243, 0.1)",
+                  "trendLineColor": "#2196F3",
+                  "opacity": 100,
+                  "scalePosition": "no",
+                  "scaleMode": "Normal",
+                  "fontFamily": "Inter",
+                  "noVolume": false,
+                  "utm_source": "your_github_username.github.io",
+                  "utm_medium": "widget",
+                  "utm_campaign": "single-quote-widget"
+                }
+                </script>
+            </div>
+
+            <div class="tradingview-widget-container widget-wrapper">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+                {
+                  "symbol": "INDEX:NDX",
+                  "width": "100%",
+                  "is,"height": 250,
+                  "locale": "es",
+                  "dateRange": "12M",
+                  "colorTheme": "light",
+                  "fontColor": "#292929",
+                  "border": true,
+                  "borderColor": "#e0e0e0",
+                  "gridLineColor": "#e0e0e0",
+                  "chartType": "area",
+                  "font": "Inter",
+                  "underLineColor": "rgba(33, 150, 243, 0.1)",
+                  "trendLineColor": "#2196F3",
+                  "opacity": 100,
+                  "scalePosition": "no",
+                  "scaleMode": "Normal",
+                  "fontFamily": "Inter",
+                  "noVolume": false,
+                  "utm_source": "your_github_username.github.io",
+                  "utm_medium": "widget",
+                  "utm_campaign": "single-quote-widget"
+                }
+                </script>
+            </div>
+
+            <div class="tradingview-widget-container widget-wrapper">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+                {
+                  "symbol": "INDEX:DXY0",
+                  "width": "100%",
+                  "is,"height": 250,
+                  "locale": "es",
+                  "dateRange": "12M",
+                  "colorTheme": "light",
+                  "fontColor": "#292929",
+                  "border": true,
+                  "borderColor": "#e0e0e0",
+                  "gridLineColor": "#e0e0e0",
+                  "chartType": "area",
+                  "font": "Inter",
+                  "underLineColor": "rgba(33, 150, 243, 0.1)",
+                  "trendLineColor": "#2196F3",
+                  "opacity": 100,
+                  "scalePosition": "no",
+                  "scaleMode": "Normal",
+                  "fontFamily": "Inter",
+                  "noVolume": false,
+                  "utm_source": "your_github_username.github.io",
+                  "utm_medium": "widget",
+                  "utm_campaign": "single-quote-widget"
+                }
+                </script>
+            </div>
+
+            <div class="tradingview-widget-container widget-wrapper">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+                {
+                  "symbol": "BME:IBEX35",
+                  "width": "100%",
+                  "is,"height": 250,
+                  "locale": "es",
+                  "dateRange": "12M",
+                  "colorTheme": "light",
+                  "fontColor": "#292929",
+                  "border": true,
+                  "borderColor": "#e0e0e0",
+                  "gridLineColor": "#e0e0e0",
+                  "chartType": "area",
+                  "font": "Inter",
+                  "underLineColor": "rgba(33, 150, 243, 0.1)",
+                  "trendLineColor": "#2196F3",
+                  "opacity": 100,
+                  "scalePosition": "no",
+                  "scaleMode": "Normal",
+                  "fontFamily": "Inter",
+                  "noVolume": false,
+                  "utm_source": "your_github_username.github.io",
+                  "utm_medium": "widget",
+                  "utm_campaign": "single-quote-widget"
+                }
+                </script>
+            </div>
+
+        </div>
+    </div>
+    <a href="index.html" class="absolute top-4 left-4 text-gray-700 hover:text-blue-600">
+        <i class="fas fa-arrow-left text-2xl"></i>
+    </a>
+</body>
+</html>
