@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Proyectos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .menu-item {
+            background-color: #4f46e5; /* Índigo oscuro */
+            color: white;
+            padding: 15px 25px;
+            margin: 15px 0;
+            border-radius: 8px;
+            text-decoration: none;
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .menu-item:hover {
+            background-color: #4338ca; /* Índigo más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        .menu-item:active {
+            background-color: #3730a3; /* Índigo aún más oscuro al hacer clic */
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="container">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8">Mis Proyectos Web</h1>
+        <p class="text-lg text-gray-700 mb-10">Selecciona una opción del menú para explorar mis creaciones.</p>
+
+        <nav class="space-y-4">
+            <a href="bares.html" class="menu-item">
+                Buscador de Bares de Tapas en Sevilla
+            </a>
+            <a href="index.html" class="menu-item">
+                Mi Segundo Proyecto (próximamente)
+            </a>
+            <a href="index.html" class="menu-item">
+                Mi Tercer Proyecto (próximamente)
+            </a>
+            <a href="index.html" class="menu-item">
+                Mi Cuarto Proyecto (próximamente)
+            </a>
+        </nav>
+
+        <p class="text-sm text-gray-500 mt-12">&copy; 2025 [Tu Nombre/Usuario]. Todos los derechos reservados.</p>
+    </div>
+</body>
+</html>
