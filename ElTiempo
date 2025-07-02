@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiempo Actual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .weather-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); /* Blue gradient */
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            margin: 40px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+        .weather-icon {
+            font-size: 5rem; /* Icon size */
+            margin-bottom: 10px;
+        }
+        #loading, #error {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1rem;
+            color: #555;
+        }
+        #error {
+            color: #dc2626; /* Red for error */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="weather-card">
+        <h1 class="text-3xl font-bold mb-4">El Tiempo Actual</h1>
+        <p class="text-lg mb-6">Obteniendo datos de tu ubicación...</p>
+
+        <div id="loading" class="text-white">Cargando... <i class="fas fa-spinner fa-spin"></i></div>
+        <div id="error" class="hidden"></div>
+
+        <div id="weather-info" class="hidden">
+            <p class="text-xl mb-2" id="city-name"></p>
+            <i id="weather-icon-display" class="weather-icon fas"></i>
+            <p class="text-4xl font-bold mb-2" id="temperature"></p>
+            <p class="text-xl mb-4" id="description"></p>
+            <div class="flex justify-around text-lg">
+                <div>
+                    <i class="fas fa-wind"></i> <span id="wind-speed"></span>
+                </div>
+                <div>
+                    <i class="fas fa-tint"></i> <span id="humidity"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // *** REEMPLAZA ESTO CON TU CLAVE API DE OPENWEATHERMAP ***
+        const API_KEY = '6d6e2be62cebed79b4b789f4961f2cc1'; // <-- ¡IMPORTANTE!
+
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const weatherInfoDiv = document.getElementById('weather-info');
+        const cityNameSpan = document.getElementById('city-name');
+        const temperatureSpan = document.getElementById('temperature');
+        const descriptionSpan = document.getElementById('description');
+        const windSpeedSpan = document.getElementById('wind-speed');
+        const humiditySpan = document.getElementById('humidity');
+        const weatherIconDisplay = document.getElementById('weather-icon-display');
+
+        function getWeatherIcon(iconCode) {
+            // Mapping OpenWeatherMap icon codes to Font Awesome icons
+            switch (iconCode) {
+                case '01d': return 'fa-sun'; // clear sky day
+                case '01n': return 'fa-moon'; // clear sky night
+                case '02d': return 'fa-cloud-sun'; // few clouds day
+                case '02n': return 'fa-cloud-moon'; // few clouds night
+                case '03d':
+                case '03n': return 'fa-cloud'; // scattered clouds
+                case '04d':
+                case '04n': return 'fa-cloud'; // broken clouds
+                case '09d':
+                case '09n': return 'fa-cloud-showers-heavy'; // shower rain
+                case '10d': return 'fa-cloud-sun-rain'; // rain day
+                case '10n': return 'fa-cloud-moon-rain'; // rain night
+                case '11d':
+                case '11n': return 'fa-bolt'; // thunderstorm
+                case '13d':
+                case '13n': return 'fa-snowflake'; // snow
+                case '50d':
+                case '50n': return 'fa-smog'; // mist
+                default: return 'fa-cloud'; // default
+            }
+        }
+
+        function fetchWeather(latitude, longitude) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric&lang=es`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            throw new Error('Error de autenticación: Clave API inválida o inactiva. Por favor, revisa tu clave en OpenWeatherMap.');
+                        }
+                        throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loadingDiv.classList.add('hidden');
+                    weatherInfoDiv.classList.remove('hidden');
+
+                    cityNameSpan.textContent = data.name;
+                    temperatureSpan.textContent = `${Math.round(data.main.temp)}°C`;
+                    descriptionSpan.textContent = data.weather[0].description.charAt(0).toUpperCase() + data.weather[0].description.slice(1);
+                    windSpeedSpan.textContent = `${data.wind.speed} m/s`;
+                    humiditySpan.textContent = `${data.main.humidity}%`;
+
+                    const iconClass = getWeatherIcon(data.weather[0].icon);
+                    weatherIconDisplay.className = `weather-icon fas ${iconClass}`; // Update classes
+
+                })
+                .catch(error => {
+                    loadingDiv.classList.add('hidden');
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.textContent = `No se pudo cargar el tiempo: ${error.message}`;
+                    console.error('Error al obtener el tiempo:', error);
+                });
+        }
+
+        function handleError(error) {
+            loadingDiv.classList.add('hidden');
+            errorDiv.classList.remove('hidden');
+            let errorMessage = 'No se pudo obtener la ubicación. ';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += 'Permiso de ubicación denegado. Por favor, habilítalo.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += 'Ubicación no disponible.';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += 'Tiempo de espera agotado al obtener la ubicación.';
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMessage += 'Error desconocido.';
+                    break;
+            }
+            errorDiv.textContent = errorMessage;
+            console.error('Error de geolocalización:', error);
+        }
+
+        // Obtener la ubicación al cargar la página
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    fetchWeather(position.coords.latitude, position.coords.longitude);
+                },
+                handleError,
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } else {
+            loadingDiv.classList.add('hidden');
+            errorDiv.classList.remove('hidden');
+            errorDiv.textContent = 'Tu navegador no soporta geolocalización.';
+        }
+    </script>
+    <a href="index.html" class="absolute top-4 left-4 text-gray-700 hover:text-blue-600">
+        <i class="fas fa-arrow-left text-2xl"></i>
+    </a>
+</body>
+</html>
