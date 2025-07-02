@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bares de Tapas en Sevilla</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    #map { height: 600px; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-2">Bares de Tapas en Sevilla</h1>
+    <p class="text-center text-gray-600 mb-6">Filtra por código postal y tipo de tapa</p>
+
+    <div class="flex flex-col md:flex-row gap-4 mb-4">
+      <input type="text" id="filtroCP" class="p-2 border rounded w-full" placeholder="Código Postal (ej. 41001)" />
+      <input type="text" id="filtroTapa" class="p-2 border rounded w-full" placeholder="Tapa (ej. salmorejo)" />
+      <button onclick="filtrarBares()" class="bg-blue-600 text-white px-4 py-2 rounded">Filtrar</button>
+      <button onclick="localizarme()" class="bg-green-600 text-white px-4 py-2 rounded">Mi ubicación</button>
+    </div>
+
+    <div id="map" class="w-full border rounded shadow"></div>
+  </div>
+
+  <script>
+    const bares = [
+      { nombre: "El Rinconcillo", direccion: "C. Gerona, 40", cp: "41003", especialidades: "Espinacas con garbanzos, Pringá", lat: 37.397827676607015, lon: -5.995790152674303 },
+      { nombre: "Las Golondrinas", direccion: "C. Antillano Campos, 26", cp: "41010", especialidades: "Solomillo al whisky", lat: 37.38502153372449, lon: -6.005585584801209 },
+      { nombre: "Bodega Santa Cruz", direccion: "C. Rodrigo Caro, 1", cp: "41004", especialidades: "Pescaíto frito, Ensaladilla", lat: 37.3863427403606, lon: -5.990792401506562 },
+      { nombre: "Casa Morales", direccion: "C. García de Vinuesa, 11", cp: "41001", especialidades: "Montaditos, chacinas", lat: 37.386665565061556, lon: -5.994595187039272 },
+      { nombre: "Los Coloniales", direccion: "Pl. Cristo de Burgos, 19", cp: "41003", especialidades: "Croquetas, presa ibérica", lat: 37.391716057608086, lon: -5.9895202356446315 },
+      { nombre: "Eslava", direccion: "C. Eslava, 3", cp: "41002", especialidades: "Huevo sobre bizcocho de boletus", lat: 37.39790869617882, lon: -5.996905933117964 },
+      { nombre: "Bar Alfalfa", direccion: "C. Candilejo, 1", cp: "41004", especialidades: "Tortilla de patatas, tapas italianas", lat: 37.390107694527025, lon: -5.9901021225339495 },
+      { nombre: "La Azotea", direccion: "C. Conde de Barajas, 13", cp: "41002", especialidades: "Tataki de atún, carrilleras", lat: 37.39689831742628, lon: -5.995241592556171 },
+      { nombre: "Blanca Paloma", direccion: "C. San Jacinto, 49", cp: "41010", especialidades: "Carrilleras, calamares", lat: 37.38370431495457, lon: -6.00560982900313 },
+      { nombre: "Taberna del Alabardero", direccion: "C. Zaragoza, 20", cp: "41001", especialidades: "Foie con higos", lat: 37.38864271015168, lon: -5.997990256340986 },
+      { nombre: "Bar Casa Cuesta", direccion: "C. Castilla, 1", cp: "41010", especialidades: "Costillas al vino, papas aliñás", lat: 37.38626009177156, lon: -6.004390564424248 },
+      { nombre: "La Taberna del Postiguillo", direccion: "C. Dos de Mayo, 2", cp: "41001", especialidades: "Solomillo al whisky, tapas tradicionales", lat: 37.38544845995704, lon: -5.9953895301031235 },
+      { nombre: "Bar Baratillo", direccion: "C. Adriano, 20", cp: "41001", especialidades: "Montaditos, tortillitas de camarones", lat: 37.38697640254552, lon: -5.997960194005651 },
+      { nombre: "Mercado Lonja del Barranco", direccion: "C. Arjona, s/n", cp: "41001", especialidades: "Tapeo variado, cocina fusión", lat: 37.38785664277214, lon: -6.002023670401889 },
+      { nombre: "Bar Sacramento", direccion: "C. Feria, 104", cp: "41003", especialidades: "Cola de toro, espinacas con garbanzos", lat: 37.401841409600294, lon: -5.992024854583738 },
+      { nombre: "Bodega Dos de Mayo", direccion: "Plaza de la Gavidia, 6", cp: "41002", especialidades: "Croquetas caseras, ensaladilla", lat: 37.39527670851034, lon: -5.997116602928451 },
+      { nombre: "Bar La Montanera", direccion: "C. Juan Sebastián Elcano, 16", cp: "41011", especialidades: "Chacinas, quesos ibéricos", lat: 37.376556884929265, lon: -5.995965270883015 },
+      { nombre: "Paco Pepe Bar", direccion: "C. Francos, 10", cp: "41004", especialidades: "Jamón ibérico, montaditos", lat: 37.389590587841276, lon: -5.992923469649808 },
+      { nombre: "Seis Tapas Bar", direccion: "Plaza Nueva, 7", cp: "41001", especialidades: "Salmorejo, tapas modernas", lat: 37.38850558214737, lon: -5.996433866143177 },
+      { nombre: "Mesones del Serranito", direccion: "C. Alfonso XII, 9", cp: "41002", especialidades: "Solomillo al whisky, flamenquines, serranito", lat: 37.39293634672491, lon: -5.9970545786569955 },
+      { nombre: "El Paseillo", direccion: "C. General Polavieja, 4", cp: "41004", especialidades: "Flamenquines, croquetas", lat: 37.38978846552224, lon: -5.994764393422227 },
+      { nombre: "Casa Ricardo", direccion: "C. Hernán Cortés, 2", cp: "41002", especialidades: "Croquetas de puchero, espinacas con garbanzos", lat: 37.39800115175238, lon: -5.995802155803133 },
+      { nombre: "Bar Manolo León", direccion: "C. Guadalquivir, 8", cp: "41002", especialidades: "Tataki de atún, salmorejo", lat: 37.400285741813676, lon: -5.997080393802325 },
+      { nombre: "La Brunilda", direccion: "C. Galera, 5", cp: "41001", especialidades: "Pulpo a la brasa, risotto de setas", lat: 37.388530351591264, lon: -5.99943927113635 },
+      { nombre: "Bar Carmela", direccion: "C. Sta. María la Blanca, 6", cp: "41004", especialidades: "Croquetas, Gnoquis, mini hamburguesas", lat: 37.38650338033152, lon: -5.98770467760865 },
+      { nombre: "Taberna Zurbarán", direccion: "Pl. Zurbarán, 2", cp: "41003", especialidades: "Gildas, huevos rellenos, ensaladilla, calamares", lat: 37.3939162687199, lon: -5.992694165008526 },
+      { nombre: "La Chunga", direccion: "C. Arjona, 13", cp: "41001", especialidades: "Tacos de atún, ceviche", lat: 37.388800830617704, lon: -6.001734569254665 },
+      { nombre: "Bar Antojo", direccion: "C. Calatrava, 44", cp: "41002", especialidades: "Tataki de presa, hummus", lat: 37.403196826007935, lon: -5.993888440560236 },
+      { nombre: "La Cacharrería", direccion: "C. Regina, 14", cp: "41003", especialidades: "Tostas dulces y saladas, brunch", lat: 37.3949171168691, lon: -5.990293366667985 },
+      { nombre: "Bar La Estrella", direccion: "C. Estrella, 3", cp: "41002", especialidades: "Montaditos, tapas clásicas", lat: 37.38867710211719, lon: -5.991345703464187 },
+      { nombre: "Bar El Pintón", direccion: "C. Francos, 42", cp: "41004", especialidades: "Cocina andaluza moderna", lat: 37.38797498074251, lon: -5.992400615583507 },
+      { nombre: "Bar La Bartola", direccion: "C. San José, 24", cp: "41004", especialidades: "Tostas gourmet, tapas vegetarianas", lat: 37.38731726515735, lon: -5.988097346942394 },
+      { nombre: "Bar La Bulla", direccion: "C. Dos de Mayo, 26", cp: "41001", especialidades: "Tataki de atún, salmorejo", lat: 37.38477388333318, lon: -5.995956216152034 },
+      { nombre: "Restaurante Amara", direccion: "C. Zaragoza, 18", cp: "41001", especialidades: "Comida de inspiración vasca", lat: 37.388837698785686, lon: -5.998043013180588 },
+      { nombre: "Dculto restaurante bar", direccion: "Buhaira, 25", cp: "41018", especialidades: "Ensaladilla, Marisco, pescados", lat: 37.385814514978186, lon: -5.978498542485128 },
+      { nombre: "El Espigón", direccion: "Bogorá, 1", cp: "41013", especialidades: "Ensaladilla, Marisco, pescados", lat: 37.36865410137529, lon: -5.983992137835659 },
+      { nombre: "Restaurante Ignacio Vidal Felipe II", direccion: "Progreso, 27", cp: "41013", especialidades: "Croquetas, ensaladilla, carpacio gambas", lat: 37.37213664497252, lon: -5.984121634710838 },
+      { nombre: "Bar La Alicantina", direccion: "Plaza del Salvador, 2", cp: "41004", especialidades: "Champiñones, ensaladilla", lat: 37.390356025584545, lon: -5.992557566777848 },
+      // ... Puedes añadir el resto aquí siguiendo el mismo formato
+    ];
+
+    let map = L.map('map').setView([37.3886, -5.9823], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    let markers = [];
+
+    function crearMarcadores(lista) {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+      const bounds = [];
+      lista.forEach(bar => {
+        const marker = L.marker([bar.lat, bar.lon]).addTo(map);
+        marker.bindPopup(`<strong>${bar.nombre}</strong><br>${bar.direccion} (${bar.cp})<br><em>${bar.especialidades}</em>`);
+        markers.push(marker);
+        bounds.push([bar.lat, bar.lon]);
+      });
+      if (bounds.length) map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+        function filtrarBares() {
+      const cp = document.getElementById("filtroCP").value.trim();
+      const tapa = document.getElementById("filtroTapa").value.trim().toLowerCase();
+      const filtrados = bares.filter(bar =>
+        (cp === "" || bar.cp.includes(cp)) &&
+        (tapa === "" || bar.especialidades.toLowerCase().includes(tapa))
+      );
+      crearMarcadores(filtrados);
+    }
+
+    function localizarme() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          L.marker([lat, lon], {
+            icon: L.icon({
+              iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+              iconSize: [32, 32]
+            })
+          }).addTo(map).bindPopup("¡Estás aquí!").openPopup();
+          map.setView([lat, lon], 14);
+        }, () => {
+          alert("No se pudo obtener la ubicación.");
+        });
+      } else {
+        alert("Tu navegador no admite geolocalización.");
+      }
+    }
+
+    crearMarcadores(bares);
+  </script>
+</body>
+</html>
