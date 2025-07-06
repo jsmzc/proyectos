@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Estrategias V4</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Estilos específicos para la matriz de interacciones por pares */
+        .interaction-grid-container {
+            display: grid;
+            gap: 1px; /* Espacio entre celdas */
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow-x: auto; /* Permite desplazamiento horizontal si hay muchas columnas */
+            max-width: 100%; /* Asegura que no se desborde */
+        }
+        .grid-header-cell, .grid-cell {
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #374151; /* gray-700 */
+            background-color: #f9fafb; /* gray-50 */
+            border: 1px solid #e2e8f0;
+            min-width: 80px; /* Ancho mínimo para las celdas de jugadores */
+        }
+        .grid-cell {
+            background-color: #fff;
+            position: relative;
+            cursor: help; /* Indica que hay un tooltip */
+        }
+        .grid-header-cell.player-name {
+            background-color: #e5e7eb; /* gray-200 */
+            font-weight: bold;
+        }
+
+        /* Colores de fondo para el resultado de la interacción */
+        .result-cooperate-cooperate { background-color: #34D399; } /* Verde: Ambos cooperan */
+        .result-steal-cooperate { background-color: #EF4444; }     /* Rojo: Roba P1, coopera P2 */
+        .result-cooperate-steal { background-color: #FBBF24; }     /* Amarillo: Coopera P1, roba P2 */
+        .result-steal-steal { background-color: #6B7280; }         /* Gris: Ambos roban */
+
+        /* Estilos para el Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px 10px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%; /* Posición el tooltip sobre el elemento */
+            left: 50%;
+            transform: translateX(-50%); /* Centra el tooltip */
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            white-space: normal; /* Permite que el texto se ajuste */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-5xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Juego de Estrategias: Interacciones de Jugadores</h1>
+
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-gray-700">Puntuaciones Actuales:</h2>
+            <div id="scorecard" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-center">
+                </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-gray-700">Matriz de Interacciones por Par:</h2>
+            <div id="interactionMatrix" class="interaction-grid-container">
+                </div>
+            <p class="text-sm text-gray-600 mt-2 text-center">
+                <span class="inline-block w-4 h-4 bg-green-400 align-middle mr-1"></span> Ambos Cooperan |
+                <span class="inline-block w-4 h-4 bg-red-500 align-middle mr-1"></span> P. Fila Roba / P. Columna Coopera |
+                <span class="inline-block w-4 h-4 bg-yellow-400 align-middle mr-1"></span> P. Fila Coopera / P. Columna Roba |
+                <span class="inline-block w-4 h-4 bg-gray-600 align-middle mr-1"></span> Ambos Roban
+                <br><span class="font-bold">Nota:</span> Las celdas muestran la *última* interacción entre cada par. Al pasar el ratón se ve el detalle.
+            </p>
+        </div>
+
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+            <button id="runInteractions" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out flex-grow">
+                Ejecutar 100 Interacciones
+            </button>
+            <button id="resetScores" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out flex-grow">
+                Resetear Puntuaciones
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Clase base para definir un jugador con sus propiedades y tipo de estrategia
+        class Player {
+            constructor(name, type) {
+                this.name = name;
+                this.type = type;
+                this.score = 0;
+                this.hasBeenRobbedBy = new Set(); // Para el Vengador: registra quién le ha robado
+                this.lastOpponentMove = null; // Necesario para la estrategia "Tit for Tat" y Vengador (para saber del oponente actual)
+            }
+
+            // Determina la jugada del jugador ('cooperate' o 'steal') basándose en su tipo
+            makeMove(opponentLastMove, opponentName) {
+                if (this.type === 'Good') {
+                    return 'cooperate'; // Siempre coopera
+                } else if (this.type === 'Bad') {
+                    return 'steal'; // Siempre roba
+                } else if (this.type === 'Tit for Tat') {
+                    // En la primera jugada coopera, luego copia el movimiento del oponente
+                    if (this.lastOpponentMove === null) {
+                        return 'cooperate';
+                    } else {
+                        return this.lastOpponentMove;
+                    }
+                } else if (this.type === 'Random') {
+                    return Math.random() < 0.5 ? 'cooperate' : 'steal'; // 50% de probabilidad de cooperar o robar
+                } else if (this.type === 'Avenger') {
+                    // El Vengador coopera a menos que haya sido robado por el oponente actual
+                    if (this.hasBeenRobbedBy.has(opponentName)) {
+                        return 'steal'; // Roba si este oponente le ha robado antes
+                    } else {
+                        return 'cooperate'; // Coopera de lo contrario
+                    }
+                }
+            }
+
+            // Actualiza el último movimiento del oponente (útil para "Tit for Tat")
+            updateLastOpponentMove(move) {
+                this.lastOpponentMove = move;
+            }
+
+            // Registra al oponente que ha robado a este jugador
+            addRobber(opponentName) {
+                if (this.type === 'Avenger') {
+                    this.hasBeenRobbedBy.add(opponentName);
+                }
+            }
+
+            // Reinicia el estado del jugador para un nuevo juego
+            resetPlayerState() {
+                this.score = 0;
+                this.lastOpponentMove = null;
+                this.hasBeenRobbedBy.clear(); // Limpia la lista de quienes le han robado
+            }
+        }
+
+        // Creación de los jugadores con sus respectivos tipos de estrategia
+        const players = [
+            new Player('Bueno', 'Good'),
+            new Player('Malo', 'Bad'),
+            new Player('Tit for Tat', 'Tit for Tat'),
+            new Player('Aleatorio', 'Random'),
+            new Player('Vengador', 'Avenger') // El quinto jugador
+        ];
+
+        // Referencias a los elementos del DOM donde se mostrará la información
+        const scorecardDiv = document.getElementById('scorecard');
+        const interactionMatrixDiv = document.getElementById('interactionMatrix'); // Cambiado de visualMatrix
+        const runInteractionsButton = document.getElementById('runInteractions');
+        const resetScoresButton = document.getElementById('resetScores');
+
+        // Almacenará la ÚLTIMA interacción entre cada par de jugadores
+        // Formato: { "Jugador1_vs_Jugador2": { player1Move: 'cooperate', player2Move: 'steal', ... } }
+        let lastPairInteractions = {};
+
+        // Función para actualizar la visualización de las puntuaciones de los jugadores
+        function updateScorecard() {
+            scorecardDiv.innerHTML = ''; // Limpia las puntuaciones anteriores
+            players.forEach(player => {
+                const playerCard = document.createElement('div');
+                playerCard.className = 'bg-gray-50 p-4 rounded-lg shadow-sm';
+                playerCard.innerHTML = `
+                    <p class="font-semibold text-lg text-gray-800">${player.name}</p>
+                    <p class="text-2xl font-bold text-blue-600">${player.score} puntos</p>
+                `;
+                scorecardDiv.appendChild(playerCard);
+            });
+        }
+
+        // Función para actualizar la matriz de interacciones por pares
+        function updateInteractionMatrix() {
+            interactionMatrixDiv.innerHTML = ''; // Limpia la matriz anterior
+
+            const numPlayers = players.length;
+
+            // Define el número de columnas para la cuadrícula CSS
+            interactionMatrixDiv.style.gridTemplateColumns = `repeat(${numPlayers + 1}, auto)`;
+
+            // Crea la celda vacía de la esquina superior izquierda
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'grid-header-cell';
+            interactionMatrixDiv.appendChild(emptyCell);
+
+            // Crea los encabezados de columna (nombres de jugadores)
+            players.forEach(p => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'grid-header-cell player-name';
+                headerCell.textContent = p.name;
+                interactionMatrixDiv.appendChild(headerCell);
+            });
+
+            // Rellena el resto de la matriz
+            players.forEach(p1 => {
+                // Crea el encabezado de fila (nombre del jugador de la fila)
+                const rowHeaderCell = document.createElement('div');
+                rowHeaderCell.className = 'grid-header-cell player-name';
+                rowHeaderCell.textContent = p1.name;
+                interactionMatrixDiv.appendChild(rowHeaderCell);
+
+                players.forEach(p2 => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+
+                    if (p1 === p2) {
+                        cell.textContent = '-'; // Indica que un jugador no interactúa consigo mismo
+                        cell.style.backgroundColor = '#f3f4f6'; // Gris claro para celdas no interactivas
+                    } else {
+                        const pairKey = `${p1.name}_vs_${p2.name}`;
+                        const interaction = lastPairInteractions[pairKey];
+
+                        if (interaction) {
+                            let className = '';
+                            let tooltipText = '';
+
+                            if (interaction.player1Move === 'cooperate' && interaction.player2Move === 'cooperate') {
+                                className = 'result-cooperate-cooperate';
+                                tooltipText = `¡Ambos cooperaron! ${p1.name} (+1), ${p2.name} (+1)`;
+                            } else if (interaction.player1Move === 'steal' && interaction.player2Move === 'cooperate') {
+                                className = 'result-steal-cooperate';
+                                tooltipText = `${p1.name} robó a ${p2.name}. ${p1.name} (+1), ${p2.name} (-1)`;
+                            } else if (interaction.player1Move === 'cooperate' && interaction.player2Move === 'steal') {
+                                className = 'result-cooperate-steal';
+                                tooltipText = `${p2.name} robó a ${p1.name}. ${p1.name} (-1), ${p2.name} (+1)`;
+                            } else if (interaction.player1Move === 'steal' && interaction.player2Move === 'steal') {
+                                className = 'result-steal-steal';
+                                tooltipText = `Ambos robaron. Nadie gana ni pierde.`;
+                            }
+                            cell.classList.add(className, 'tooltip');
+                            cell.innerHTML = `<span class="tooltiptext">${tooltipText}</span>`;
+                        } else {
+                            cell.textContent = ''; // Vacío si aún no ha habido interacción
+                            cell.style.backgroundColor = '#e2e8f0'; // Fondo por defecto para interacciones no ocurridas
+                        }
+                    }
+                    interactionMatrixDiv.appendChild(cell);
+                });
+            });
+        }
+
+        // Función para simular una única interacción entre dos jugadores
+        function conductInteraction(player1, player2) {
+            // Pasamos el nombre del oponente al makeMove para que el Vengador pueda identificarlo
+            const player1Move = player1.makeMove(player2.lastOpponentMove, player2.name);
+            const player2Move = player2.makeMove(player1.lastOpponentMove, player1.name);
+
+            let player1ScoreChange = 0;
+            let player2ScoreChange = 0;
+
+            // Aplica las reglas de puntuación según las interacciones
+            if (player1Move === 'cooperate' && player2Move === 'cooperate') {
+                player1.score += 1;
+                player2.score += 1;
+                player1ScoreChange = 1;
+                player2ScoreChange = 1;
+            } else if (player1Move === 'steal' && player2Move === 'cooperate') {
+                player1.score += 1;
+                player2.score -= 1;
+                player1ScoreChange = 1;
+                player2ScoreChange = -1;
+                player2.addRobber(player1.name); // Player1 robó a Player2
+            } else if (player1Move === 'cooperate' && player2Move === 'steal') {
+                player1.score -= 1;
+                player2.score += 1;
+                player1ScoreChange = -1;
+                player2ScoreChange = 1;
+                player1.addRobber(player2.name); // Player2 robó a Player1
+            } else if (player1Move === 'steal' && player2Move === 'steal') {
+                // Si ambos roban, no hay cambio de puntuación para ninguno.
+                player1ScoreChange = 0;
+                player2ScoreChange = 0;
+            }
+
+            // Actualiza el último movimiento del oponente para los jugadores (importante para "Tit for Tat" y Vengador)
+            player1.updateLastOpponentMove(player2Move);
+            player2.updateLastOpponentMove(player1Move);
+
+            // Guarda la última interacción para la matriz por pares
+            lastPairInteractions[`${player1.name}_vs_${player2.name}`] = {
+                player1Move: player1Move,
+                player2Move: player2Move,
+                player1ScoreChange: player1ScoreChange,
+                player2ScoreChange: player2ScoreChange
+            };
+            // También guarda la interacción en el sentido contrario para reflejarla si se necesita
+            lastPairInteractions[`${player2.name}_vs_${player1.name}`] = {
+                player1Move: player2Move, // El movimiento del Jugador 2 (ahora P1)
+                player2Move: player1Move, // El movimiento del Jugador 1 (ahora P2)
+                player1ScoreChange: player2ScoreChange,
+                player2ScoreChange: player1ScoreChange
+            };
+        }
+
+        // Función principal para ejecutar 100 interacciones del juego
+        function runGame() {
+            const numPlayers = players.length;
+            const numInteractions = 100; // Número fijo de interacciones
+
+            // Ejecuta 100 interacciones seleccionando pares de jugadores aleatoriamente
+            for (let i = 0; i < numInteractions; i++) {
+                let player1Index = Math.floor(Math.random() * numPlayers);
+                let player2Index = Math.floor(Math.random() * numPlayers);
+
+                // Asegura que los dos jugadores seleccionados sean diferentes
+                while (player1Index === player2Index) {
+                    player2Index = Math.floor(Math.random() * numPlayers);
+                }
+
+                const p1 = players[player1Index];
+                const p2 = players[player2Index];
+
+                conductInteraction(p1, p2);
+            }
+
+            // Actualiza la interfaz con las nuevas puntuaciones y la matriz de interacciones
+            updateScorecard();
+            updateInteractionMatrix();
+        }
+
+        // Función para resetear las puntuaciones
+        function resetGame() {
+            players.forEach(player => {
+                player.resetPlayerState(); // Llama al método para resetear el estado del jugador
+            });
+            lastPairInteractions = {}; // Limpia el historial de interacciones por pares
+            updateScorecard();
+            updateInteractionMatrix(); // Limpia la matriz visual
+        }
+
+        // Muestra el estado inicial del juego al cargar la página
+        updateScorecard();
+        updateInteractionMatrix(); // Asegúrate de que la matriz visual se inicialice vacía
+
+        // Asocia las funciones a los eventos de clic de los botones
+        runInteractionsButton.addEventListener('click', runGame);
+        resetScoresButton.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
