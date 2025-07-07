@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bares de Tapas en Sevilla</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    #map { height: 600px !important; width: 100%; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-2">Bares de Tapas en Sevilla</h1>
+    <p class="text-center text-gray-600 mb-6">Filtra por código postal y tipo de tapa</p>
+
+    <div class="flex flex-col md:flex-row gap-4 mb-4">
+      <input type="text" id="filtroCP" class="p-2 border rounded w-full" placeholder="Código Postal (ej. 41001)" />
+      <input type="text" id="filtroTapa" class="p-2 border rounded w-full" placeholder="Tapa (ej. salmorejo)" />
+      <select id="filtroAF" class="p-2 border rounded w-full">
+        <option value="">AF Approved (Todos)</option>
+        <option value="Si">Sí</option>
+        <option value="No">No</option>
+      </select>
+      <button onclick="filtrarBares()" class="bg-blue-600 text-white px-4 py-2 rounded">Filtrar</button>
+      <button onclick="localizarme()" class="bg-green-600 text-white px-4 py-2 rounded">Mi ubicación</button>
+    </div>
+
+    <div id="map" class="w-full border rounded shadow"></div>
+  </div>
+
+  <script type="module"> // ¡IMPORTANTE: Añade type="module" aquí!
+    import { bares } from './bares_data.js'; // ¡IMPORTANTE: Ruta correcta al archivo!
+
+    let map;
+    let markers = [];
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        map = L.map('map').setView([37.3886, -5.9823], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        crearMarcadores(bares);
+    });
+
+    function crearMarcadores(lista) {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+      const bounds = [];
+      lista.forEach(bar => {
+        const marker = L.marker([bar.lat, bar.lon]).addTo(map);
+        marker.bindPopup(`<strong>${bar.nombre}</strong><br>${bar.direccion} (${bar.cp})<br><em>${bar.especialidades}</em><br>AF Approved: ${bar.AF_aproved}`);
+        markers.push(marker);
+        bounds.push([bar.lat, bar.lon]);
+      });
+      if (bounds.length) map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    function filtrarBares() {
+      const cp = document.getElementById("filtroCP").value.trim();
+      const tapa = document.getElementById("filtroTapa").value.trim().toLowerCase();
+      const afApproved = document.getElementById("filtroAF").value;
+
+      const filtrados = bares.filter(bar =>
+        (cp === "" || bar.cp.includes(cp)) &&
+        (tapa === "" || bar.especialidades.toLowerCase().includes(tapa)) &&
+        (afApproved === "" || bar.AF_aproved === afApproved)
+      );
+      crearMarcadores(filtrados);
+    }
+
+    function localizarme() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          L.marker([lat, lon], {
+            icon: L.icon({
+              iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+              iconSize: [32, 32]
+            })
+          }).addTo(map).bindPopup("¡Estás aquí!").openPopup();
+          map.setView([lat, lon], 14);
+        }, () => {
+          alert("No se pudo obtener la ubicación.");
+        });
+      } else {
+        alert("Tu navegador no admite geolocalización.");
+      }
+    }
+  </script>
+</body>
+</html>
