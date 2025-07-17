@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Territorio Extinto</title>
+  <style>
+    body { margin: 0; background: black; font-family: sans-serif; overflow: hidden; }
+    canvas { display: block; margin: auto; touch-action: none; }
+    #info { position: absolute; top: 10px; left: 10px; font-size: 1.2em; color: white; }
+    #controls {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 20px;
+    }
+    .btn {
+      width: 60px; height: 60px; font-size: 24px;
+      background: #333; color: white; border: 2px solid white; border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="800" height="600"></canvas>
+<div id="info">Evita los 🦖🦕🦣🦤 y escapa siendo 🧍‍♂️. Toca 🪨 para lanzar piedras.</div>
+<div id="controls">
+  <button class="btn" onclick="dir('up')">⬆️</button>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button class="btn" onclick="dir('left')">⬅️</button>
+    <button class="btn" onclick="dir('right')">➡️</button>
+  </div>
+  <button class="btn" onclick="dir('down')">⬇️</button>
+  <button class="btn" onclick="throwStone()">🪨</button>
+</div>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player = { x: 400, y: 300, vx: 0, vy: 0, emoji: "🧍‍♂️" };
+const friction = 0.9, speed = 1.5;
+let stones = [];
+
+let dinos = [
+  { x: 100, y: 100, dx: 2, dy: 1, emoji: "🦖", freeze: 0 },
+  { x: 700, y: 100, dx: -2, dy: 2, emoji: "🦕", freeze: 0 },
+  { x: 100, y: 500, dx: 3, dy: -1, emoji: "🦣", freeze: 0 },
+  { x: 700, y: 500, dx: -1, dy: -3, emoji: "🦤", freeze: 0 },
+  { x: 400, y: 100, dx: 2, dy: -2, emoji: "🦖", freeze: 0 },
+  { x: 200, y: 300, dx: -2, dy: 1, emoji: "🦕", freeze: 0 },
+  { x: 600, y: 400, dx: 1, dy: -2, emoji: "🦣", freeze: 0 }
+];
+
+// Fondo
+function drawBackground() {
+  let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, "#f0c57b");
+  gradient.addColorStop(0.5, "#d68b45");
+  gradient.addColorStop(1, "#473222");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = 20;
+  ctx.beginPath();
+  ctx.moveTo(0, 400);
+  ctx.bezierCurveTo(200, 350, 600, 450, 800, 400);
+  ctx.stroke();
+
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 4;
+  ctx.setLineDash([15, 10]);
+  ctx.beginPath();
+  ctx.moveTo(0, 400);
+  ctx.bezierCurveTo(200, 350, 600, 450, 800, 400);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawEmoji(x, y, emoji) {
+  ctx.font = "28px serif";
+  ctx.fillText(emoji, x, y);
+}
+
+function updateDino(d) {
+  if (d.freeze > 0) {
+    d.freeze--;
+    return;
+  }
+  d.x += d.dx;
+  d.y += d.dy;
+  if (d.x < 0 || d.x > canvas.width - 30) d.dx *= -1;
+  if (d.y < 0 || d.y > canvas.height - 30) d.dy *= -1;
+  if (Math.random() < 0.01) {
+    d.dx = Math.random() * 4 - 2;
+    d.dy = Math.random() * 4 - 2;
+  }
+}
+
+function drawStones() {
+  ctx.fillStyle = "gray";
+  stones.forEach((s, i) => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    s.x += s.vx;
+    s.y += s.vy;
+    dinos.forEach(d => {
+      if (Math.abs(s.x - d.x) < 25 && Math.abs(s.y - d.y) < 25) {
+        d.freeze = 30;
+        stones.splice(i, 1);
+      }
+    });
+    if (s.x < 0 || s.x > canvas.width || s.y < 0 || s.y > canvas.height) stones.splice(i, 1);
+  });
+}
+
+function draw() {
+  drawBackground();
+  player.x += player.vx;
+  player.y += player.vy;
+  player.vx *= friction;
+  player.vy *= friction;
+  drawEmoji(player.x, player.y, player.emoji);
+
+  drawStones();
+
+  dinos.forEach(d => {
+    drawEmoji(d.x, d.y, d.emoji);
+    updateDino(d);
+    if (Math.abs(player.x - d.x) < 30 && Math.abs(player.y - d.y) < 30) {
+      alert("¡Uno de los dinosaurios te atrapó! 🦖");
+      player = { x: 400, y: 300, vx: 0, vy: 0, emoji: "🧍‍♂️" };
+      stones = [];
+    }
+  });
+}
+
+document.addEventListener("keydown", e => {
+  switch(e.key) {
+    case "ArrowUp": player.vy -= speed; break;
+    case "ArrowDown": player.vy += speed; break;
+    case "ArrowLeft": player.vx -= speed; break;
+    case "ArrowRight": player.vx += speed; break;
+    case " ": throwStone(); break;
+  }
+});
+
+// Joystick virtual
+function dir(direction) {
+  if (direction === "up") player.vy -= speed;
+  if (direction === "down") player.vy += speed;
+  if (direction === "left") player.vx -= speed;
+  if (direction === "right") player.vx += speed;
+}
+
+// Lanzar piedra
+function throwStone() {
+  stones.push({ x: player.x + 10, y: player.y + 10, vx: player.vx * 2, vy: player.vy * 2 });
+}
+
+setInterval(draw, 30);
+</script>
+</body>
+</html>
