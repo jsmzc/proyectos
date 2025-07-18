@@ -3,51 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <title>Territorio Extinto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin: 0; background: black; font-family: sans-serif; overflow: hidden; }
-    canvas { display: block; margin: auto; touch-action: none; }
-    #info { position: absolute; top: 10px; left: 10px; font-size: 1.2em; color: white; }
-    #controls {
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 20px;
+    html, body {
+      margin: 0; padding: 0;
+      background: black;
+      font-family: sans-serif;
+      overflow: hidden;
+      touch-action: none;
     }
-    .btn {
-      width: 60px; height: 60px; font-size: 24px;
-      background: #333; color: white; border: 2px solid white; border-radius: 50%;
+    canvas {
+      display: block;
+      background: #111;
+    }
+    #info {
+      position: absolute;
+      top: 10px; left: 10px;
+      font-size: 1em;
+      color: white;
+      z-index: 2;
+    }
+    #stoneBtn {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      width: 80px; height: 80px;
+      font-size: 32px;
+      background: #333;
+      color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-<canvas id="game" width="800" height="600"></canvas>
-<div id="info">Evita los 🦖🦕🦣🦤 y escapa siendo 🧍‍♂️. Toca 🪨 para lanzar piedras.</div>
-<div id="controls">
-  <button class="btn" onclick="dir('up')">⬆️</button>
-  <div style="display:flex;flex-direction:column;gap:10px;">
-    <button class="btn" onclick="dir('left')">⬅️</button>
-    <button class="btn" onclick="dir('right')">➡️</button>
-  </div>
-  <button class="btn" onclick="dir('down')">⬇️</button>
-  <button class="btn" onclick="throwStone()">🪨</button>
-</div>
+<canvas id="game"></canvas>
+<div id="info">Toca para moverte. Pulsa 🪨 para lanzar piedras.</div>
+<button id="stoneBtn">🪨</button>
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+resizeCanvas();
 
-let player = { x: 400, y: 300, vx: 0, vy: 0, emoji: "🧍‍♂️" };
-const friction = 0.9, speed = 1.5;
+let player = { x: canvas.width/2, y: canvas.height/2, vx: 0, vy: 0, emoji: "🧍‍♂️" };
+const friction = 0.9, speed = 2;
+let target = null;
 let stones = [];
 
-let dinos = [
-  { x: 100, y: 100, dx: 2, dy: 1, emoji: "🦖", freeze: 0 },
-  { x: 700, y: 100, dx: -2, dy: 2, emoji: "🦕", freeze: 0 },
-  { x: 100, y: 500, dx: 3, dy: -1, emoji: "🦣", freeze: 0 },
-  { x: 700, y: 500, dx: -1, dy: -3, emoji: "🦤", freeze: 0 },
-  { x: 400, y: 100, dx: 2, dy: -2, emoji: "🦖", freeze: 0 },
-  { x: 200, y: 300, dx: -2, dy: 1, emoji: "🦕", freeze: 0 },
-  { x: 600, y: 400, dx: 1, dy: -2, emoji: "🦣", freeze: 0 }
-];
+let dinos = Array.from({length: 7}, (_, i) => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  dx: Math.random() * 4 - 2,
+  dy: Math.random() * 4 - 2,
+  emoji: ["🦖","🦕","🦣","🦤","🦖","🦕","🦣"][i],
+  freeze: 0
+}));
 
-// Fondo
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+
 function drawBackground() {
   let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, "#f0c57b");
@@ -55,22 +72,6 @@ function drawBackground() {
   gradient.addColorStop(1, "#473222");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = "#666";
-  ctx.lineWidth = 20;
-  ctx.beginPath();
-  ctx.moveTo(0, 400);
-  ctx.bezierCurveTo(200, 350, 600, 450, 800, 400);
-  ctx.stroke();
-
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 4;
-  ctx.setLineDash([15, 10]);
-  ctx.beginPath();
-  ctx.moveTo(0, 400);
-  ctx.bezierCurveTo(200, 350, 600, 450, 800, 400);
-  ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 function drawEmoji(x, y, emoji) {
@@ -113,6 +114,16 @@ function drawStones() {
 
 function draw() {
   drawBackground();
+  if (target) {
+    let dx = target.x - player.x;
+    let dy = target.y - player.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > 5) {
+      player.vx += speed * dx / dist;
+      player.vy += speed * dy / dist;
+    }
+  }
+
   player.x += player.vx;
   player.y += player.vy;
   player.vx *= friction;
@@ -126,34 +137,31 @@ function draw() {
     updateDino(d);
     if (Math.abs(player.x - d.x) < 30 && Math.abs(player.y - d.y) < 30) {
       alert("¡Uno de los dinosaurios te atrapó! 🦖");
-      player = { x: 400, y: 300, vx: 0, vy: 0, emoji: "🧍‍♂️" };
+      player = { x: canvas.width/2, y: canvas.height/2, vx: 0, vy: 0, emoji: "🧍‍♂️" };
       stones = [];
+      target = null;
     }
   });
 }
 
-document.addEventListener("keydown", e => {
-  switch(e.key) {
-    case "ArrowUp": player.vy -= speed; break;
-    case "ArrowDown": player.vy += speed; break;
-    case "ArrowLeft": player.vx -= speed; break;
-    case "ArrowRight": player.vx += speed; break;
-    case " ": throwStone(); break;
-  }
+canvas.addEventListener("touchstart", e => {
+  let rect = canvas.getBoundingClientRect();
+  let touch = e.touches[0];
+  target = {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
 });
 
-// Joystick virtual
-function dir(direction) {
-  if (direction === "up") player.vy -= speed;
-  if (direction === "down") player.vy += speed;
-  if (direction === "left") player.vx -= speed;
-  if (direction === "right") player.vx += speed;
-}
+canvas.addEventListener("click", e => {
+  target = { x: e.offsetX, y: e.offsetY };
+});
 
-// Lanzar piedra
-function throwStone() {
-  stones.push({ x: player.x + 10, y: player.y + 10, vx: player.vx * 2, vy: player.vy * 2 });
-}
+document.getElementById("stoneBtn").addEventListener("click", () => {
+  let vx = player.vx || 2;
+  let vy = player.vy || 0;
+  stones.push({ x: player.x + 10, y: player.y + 10, vx: vx * 2, vy: vy * 2 });
+});
 
 setInterval(draw, 30);
 </script>
